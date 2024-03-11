@@ -16,4 +16,6 @@ public interface PbsStatusDao {
 	String getNDRStatus(String pepfarId, String facilityDatimCode) throws Exception;
 	
 	String getNDRStatusforFacility(String pepfarId, String facilityDatimCode) throws Exception;
+	
+	List<Map<String, Object>> getPriorityList();
 }

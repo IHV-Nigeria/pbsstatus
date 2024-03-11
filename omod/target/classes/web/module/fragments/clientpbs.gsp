@@ -8,7 +8,7 @@
 
 <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <a class="nav-item nav-link" id="nav-all-settings" href="pbsstatus.gsp">Back to Client List</a>
+        <a class="nav-item nav-link" id="nav-all-settings" href="pbsstatus.page">Back to Client List</a>
     </div>
 </nav>
 <h1 style="text-align: center;">CLIENT FINGERPRINT ANALYSIS</h1>

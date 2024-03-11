@@ -10,7 +10,7 @@
         "type": "link",
         "label": "PBS Analytics",
         "url": "pbsstatus/pbsstatus.page",
-        "icon": "fa-fingerprint"
+        "icon": "icon-barcode"
       }
     ]
   }

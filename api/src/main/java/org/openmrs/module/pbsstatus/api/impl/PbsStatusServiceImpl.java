@@ -40,14 +40,14 @@ public class PbsStatusServiceImpl implements PbsStatusService {
 	}
 	
 	@Override
-	public String getNDRStatusforFacility(String na, String facilityDatimCode) {
+	public String getNDRStatusforFacility(String pepfarId, String facilityDatimCode) throws Exception {
 		
-		return na;
+		return pbsStatusDao.getNDRStatusforFacility(pepfarId, facilityDatimCode);
 	}
 	
 	@Override
-	public List<Map<String, String>> getPriorityList() {
-		return null;
+	public List<Map<String, Object>> getPriorityList() {
+		return pbsStatusDao.getPriorityList();
 	}
 	
 }

@@ -15,7 +15,7 @@ public interface PbsStatusService {
 	
 	String getNDRStatus(String pepfarId, String facilityDatimCode) throws Exception;
 	
-	String getNDRStatusforFacility(String na, String facilityDatimCode);
+	String getNDRStatusforFacility(String na, String facilityDatimCode) throws Exception;
 	
-	List<Map<String, String>> getPriorityList();
+	List<Map<String, Object>> getPriorityList();
 }

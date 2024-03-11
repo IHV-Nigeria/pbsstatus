@@ -13,7 +13,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.JavaType;
+import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
+import org.openmrs.Patient;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
 import org.openmrs.module.pbsstatus.ResponseData;
 
@@ -22,10 +27,11 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 //@Repository("pbsstatus.PBSStatusDao")
 public class PBSStatusDaoImpl implements PbsStatusDao {
@@ -60,6 +66,10 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	public List<Map<String, String>> getPatientBaselinePBS(String pepfarId, int patient_id) {
 		String SQLqueryString = null;
 		SQLQuery query;
+		
+		if (patient_id == 0) {
+			patient_id = getPatientIdByPepfarId(pepfarId);
+		}
 		
 		if (pepfarId == null || pepfarId.equals("")) {
 			SQLqueryString = "select bi.patient_id, bi.template, bi.imageWidth, bi.imageHeight, bi.imageDPI, bi.imageQuality, bi.fingerPosition, bi.date_created"
@@ -109,6 +119,9 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		
 		String SQLqueryString = null;
 		SQLQuery query;
+		if (patient_id == 0) {
+			patient_id = getPatientIdByPepfarId(pepfarId);
+		}
 		
 		if (pepfarId == null || pepfarId.equals("")) {
 			SQLqueryString = "select bi.patient_id, bi.template, bi.imageWidth, bi.imageHeight, bi.imageDPI, bi.imageQuality, bi.fingerPosition, bi.date_created, bi.recapture_count"
@@ -260,34 +273,67 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	
 	public void saveResponseToDatabase(String response) {
+		Transaction transaction = null;
 		try {
 			// Construct JavaType for List<ResponseData>
 			JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, ResponseData.class);
 			
 			// Parse JSON response into a list of objects
 			List<ResponseData> responseDataList = objectMapper.readValue(response, listType);
-			
+			transaction = getSessionFactory().getCurrentSession().beginTransaction();
 			// Get Hibernate session and create SQL query
+			// "INSERT INTO pbs_ndr_status (facility_datim_code, pepfar_id, match_outcome, recapture_date, baseline_replaced, otherinfo) VALUES (:facilityDatimCode, :pepfarId, :matchOutcome, :recaptureDate, :baselineReplaced, :otherInfo)");
 			SQLQuery query = getSessionFactory()
 			        .getCurrentSession()
 			        .createSQLQuery(
-			            "INSERT INTO pbs_ndr_status (facility_datim_code, pepfar_id, match_outcome, recapture_date, baseline_replaced) VALUES (:facilityDatimCode, :pepfarId, :matchOutcome, :recaptureDate, :baselineReplaced)");
-			
+			            "INSERT INTO pbs_ndr_status (facility_datim_code, pepfar_id, match_outcome, recapture_date, baseline_replaced, otherinfo) "
+			                    + "VALUES (:facilityDatimCode, :pepfarId, :matchOutcome, :recaptureDate, :baselineReplaced, :otherInfo) "
+			                    + "ON DUPLICATE KEY UPDATE " + "match_outcome = VALUES(match_outcome), "
+			                    + "recapture_date = VALUES(recapture_date), "
+			                    + "baseline_replaced = VALUES(baseline_replaced), " + "otherinfo = VALUES(otherinfo)");
 			// Iterate over the list and execute INSERT statements
 			for (ResponseData responseData : responseDataList) {
-				query.setParameter("facilityDatimCode", responseData.getFacilityDatimCode());
-				query.setParameter("pepfarId", responseData.getPepfarId());
-				query.setParameter("matchOutcome", responseData.getMatchOutcome());
-				query.setParameter("recaptureDate", responseData.getRecaptureDate());
-				query.setParameter("baselineReplaced", responseData.getBaselineReplaced());
+				
+				Timestamp recaptureDate = convertToTimestamp(responseData.getRecapture_date());
+				
+				query.setParameter("facilityDatimCode", responseData.getFacility_datim_code());
+				query.setParameter("pepfarId", responseData.getPepfar_id());
+				query.setParameter("matchOutcome", responseData.getMatch_outcome());
+				query.setParameter("recaptureDate", recaptureDate);
+				query.setParameter("baselineReplaced", responseData.getBaseline_replaced());
+				query.setParameter("otherInfo", responseData.getOtherinfo());
 				query.executeUpdate();
 			}
+			
+			transaction.commit();
 			
 			System.out.println("Response saved to database successfully!");
 		}
 		catch (Exception e) {
+			if (transaction != null && transaction.isActive()) {
+				transaction.rollback();
+			}
+			
 			e.printStackTrace();
 			System.out.println("Failed to save response to database.");
+		}
+		finally {
+			if (getSessionFactory().getCurrentSession() != null && getSessionFactory().getCurrentSession().isOpen()) {
+				getSessionFactory().getCurrentSession().close();
+			}
+		}
+	}
+	
+	// Method to convert date format
+	private Timestamp convertToTimestamp(String dateStr) throws ParseException {
+		try {
+			SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
+			Date date = inputFormat.parse(dateStr);
+			return new Timestamp(date.getTime());
+		}
+		catch (ParseException e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 	
@@ -303,35 +349,50 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		
 		for (Object[] row : clientLocalNDRStatus) {
 			Map<String, String> tempMap = new HashMap<String, String>();
-			Integer patientId = (Integer) row[0];
-			tempMap.put("match_outcome", patientId.toString());
-			tempMap.put("recapture_date", (String) row[1]);
-			tempMap.put("baseline_replaced", (String) row[2]);
-			tempMap.put("otherinfo", (String) row[3]);
+			tempMap.put("match_outcome", row[0].toString());
+			tempMap.put("recapture_date", row[1].toString());
+			tempMap.put("baseline_replaced", row[2].toString());
+			tempMap.put("otherinfo", row[3] != null ? row[3].toString() : "");
 			clientNDRStatus.add(tempMap);
 		}
 		return clientNDRStatus.toString();
 	}
 	
-	public String getPriorityList() {
-		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where match_outcome !='Match'";
+	public List<Map<String, Object>> getPriorityList() {
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo, pepfar_id from pbs_ndr_status where match_outcome !='Match'";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
 		
 		List<Object[]> clientLocalNDRStatus = query.list();
 		
-		List<Map<String, String>> clientNDRStatus = new ArrayList<Map<String, String>>();
+		List<Map<String, Object>> clientNDRStatus = new ArrayList<>();
 		
 		for (Object[] row : clientLocalNDRStatus) {
-			Map<String, String> tempMap = new HashMap<String, String>();
-			Integer patientId = (Integer) row[0];
-			tempMap.put("match_outcome", patientId.toString());
-			tempMap.put("recapture_date", (String) row[1]);
-			tempMap.put("baseline_replaced", (String) row[2]);
-			tempMap.put("otherinfo", (String) row[3]);
+			Map<String, Object> tempMap = new HashMap<>();
+			tempMap.put("match_outcome", row[0] != null ? row[0] : "");
+			tempMap.put("recapture_date", row[1] != null ? row[1] : "");
+			tempMap.put("baseline_replaced", row[2] != null ? row[2] : "");
+			tempMap.put("otherinfo", row[3] != null ? row[3] : "");
+			tempMap.put("pepfar_id", row[4] != null ? row[4] : "");
 			clientNDRStatus.add(tempMap);
 		}
-		return clientNDRStatus.toString();
+		return clientNDRStatus;
+	}
+	
+	public int getPatientIdByPepfarId(String pepfarId) {
+		try {
+			Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(Patient.class); // Assuming the entity is named Patient
+			criteria.add(Restrictions.eq("pepfarId", pepfarId));
+			criteria.setProjection(Projections.property("patient_id")); // Assuming "patient_id" is the property name
+			
+			Integer patientId = (Integer) criteria.uniqueResult();
+			
+			return patientId != null ? patientId : -1; // Return -1 if patientId is null
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return -1; // Return -1 in case of an exception
+		}
 	}
 	
 	// Connection Methods below

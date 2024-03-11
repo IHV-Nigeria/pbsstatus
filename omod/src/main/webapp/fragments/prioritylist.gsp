@@ -36,14 +36,16 @@
                 PEPFAR ID
             </th>
             <th>
-                First Name
+                NDR Match Status
             </th>
             <th>
-                Last Name
+                Last Recapture Date
             </th>
             <th>
-                View PBS Status
+                Baseline Replaced
             </th>
+            <th>Remarks</th>
+            <th>Action</th>
         </tr>
         </thead>
 
@@ -52,10 +54,12 @@
         <% if (prioritylist) { %>
         <% for (int i = 0; i < prioritylist.size(); i++) { %>
         <tr>
-            <td>${ patients.get(i).get("pepfarId")}</td>
-            <td>${ patients.get(i).get("given_name") }</td>
-            <td>${ patients.get(i).get("family_name") }</td>
-            <td><a target="_blank" href="clientpbs.page?pepfarId=${patients.get(i).get("pepfarId")}&patient_id=${patients.get(i).get("patient_id")}" class="btn btn-outline-info" title="Client to view client PBS Status">View Status</a></td>
+            <td>${ prioritylist.get(i).get("pepfar_id")}</td>
+            <td>${ prioritylist.get(i).get("match_outcome") }</td>
+            <td>${ prioritylist.get(i).get("recapture_date") }</td>
+            <td>${ prioritylist.get(i).get("baseline_replaced") }</td>
+            <td>${ prioritylist.get(i).get("otherinfo") }</td>
+            <td><a target="_blank" href="clientpbs.page?pepfarId=${prioritylist.get(i).get("pepfar_id")}&patient_id=0" class="btn btn-outline-info" title="Client to view client PBS Status">View Status</a></td>
         </tr>
         <% } %>
         <% } else { %>
