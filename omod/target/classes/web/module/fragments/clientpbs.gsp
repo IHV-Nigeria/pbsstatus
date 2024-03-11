@@ -5,6 +5,12 @@
 
     def id = config.id
 %>
+
+<nav>
+    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+        <a class="nav-item nav-link" id="nav-all-settings" href="pbsstatus.gsp">Back to Client List</a>
+    </div>
+</nav>
 <h1 style="text-align: center;">CLIENT FINGERPRINT ANALYSIS</h1>
 <h3 style="text-align: center;">PEPFAR ID: <%=pepfarId%></h3>
 <% puuid = "8cc7974f-4f30-4a40-84d9-7f49a4a2818b" %>

@@ -14,4 +14,6 @@ public interface PbsStatusDao {
 	List<Map<String, String>> getCurrentRecapture(String pepfarId, int patientId);
 	
 	String getNDRStatus(String pepfarId, String facilityDatimCode) throws Exception;
+	
+	String getNDRStatusforFacility(String pepfarId, String facilityDatimCode) throws Exception;
 }

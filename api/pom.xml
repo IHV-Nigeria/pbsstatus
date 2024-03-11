@@ -11,4 +11,11 @@
 	<packaging>jar</packaging>
 	<name>PBS Status API</name>
 	<description>API project for PBS Status</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+    </dependencies>
 </project>

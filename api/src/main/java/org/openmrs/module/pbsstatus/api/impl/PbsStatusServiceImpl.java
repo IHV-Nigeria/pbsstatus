@@ -39,4 +39,15 @@ public class PbsStatusServiceImpl implements PbsStatusService {
 		return pbsStatusDao.getNDRStatus(pepfarId, facilityDatimCode);
 	}
 	
+	@Override
+	public String getNDRStatusforFacility(String na, String facilityDatimCode) {
+		
+		return na;
+	}
+	
+	@Override
+	public List<Map<String, String>> getPriorityList() {
+		return null;
+	}
+	
 }

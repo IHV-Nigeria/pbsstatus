@@ -21,11 +21,10 @@
 
 <nav>
     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <a class="nav-item nav-link" id="nav-all-settings" href="prioritylist.page">Priority List</a>
+        <a class="nav-item nav-link" id="nav-all-settings" href="pbsstatus.page">Back to Client List</a>
     </div>
 </nav>
-
-<h1>Clients PBS Status</h1>
+<h1>PBS Priority List</h1>
 
 
 <div class="row" style="width: 100% !important;">
@@ -50,19 +49,19 @@
 
 
         <tbody>
-        <% if (patients) { %>
-        <% for (int i = 0; i < patients.size(); i++) { %>
-            <tr>
-                <td>${ patients.get(i).get("pepfarId")}</td>
-                <td>${ patients.get(i).get("given_name") }</td>
-                <td>${ patients.get(i).get("family_name") }</td>
-                <td><a target="_blank" href="clientpbs.page?pepfarId=${patients.get(i).get("pepfarId")}&patient_id=${patients.get(i).get("patient_id")}" class="btn btn-outline-info" title="Client to view client PBS Status">View Status</a></td>
-            </tr>
-            <% } %>
+        <% if (prioritylist) { %>
+        <% for (int i = 0; i < prioritylist.size(); i++) { %>
+        <tr>
+            <td>${ patients.get(i).get("pepfarId")}</td>
+            <td>${ patients.get(i).get("given_name") }</td>
+            <td>${ patients.get(i).get("family_name") }</td>
+            <td><a target="_blank" href="clientpbs.page?pepfarId=${patients.get(i).get("pepfarId")}&patient_id=${patients.get(i).get("patient_id")}" class="btn btn-outline-info" title="Client to view client PBS Status">View Status</a></td>
+        </tr>
+        <% } %>
         <% } else { %>
-            <tr>
-                <td colspan="4">No Patients Found</td>
-            </tr>
+        <tr>
+            <td colspan="4">No Patients Found</td>
+        </tr>
         <% } %>
         </tbody>
     </table>

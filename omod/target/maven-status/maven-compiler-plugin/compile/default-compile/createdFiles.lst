@@ -2,3 +2,4 @@ org\openmrs\module\pbsstatus\fragment\controller\ClientpbsFragmentController.cla
 org\openmrs\module\pbsstatus\fragment\controller\PbsstatusFragmentController.class
 org\openmrs\module\pbsstatus\extension\html\AdminList.class
 org\openmrs\module\pbsstatus\web\controller\PBSStatusController.class
+org\openmrs\module\pbsstatus\fragment\controller\PrioritylistFragmentController.class

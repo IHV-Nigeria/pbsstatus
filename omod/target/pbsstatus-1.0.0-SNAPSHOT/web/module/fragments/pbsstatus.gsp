@@ -19,6 +19,11 @@
     def id = config.id
 %>
 
+<nav>
+    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+        <a class="nav-item nav-link" id="nav-all-settings" href="prioritylist.page">Priority List</a>
+    </div>
+</nav>
 
 <h1>Clients PBS Status</h1>
 

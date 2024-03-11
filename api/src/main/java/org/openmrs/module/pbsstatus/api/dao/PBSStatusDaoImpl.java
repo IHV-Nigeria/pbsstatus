@@ -11,18 +11,21 @@ package org.openmrs.module.pbsstatus.api.dao;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.JavaType;
 import org.hibernate.SQLQuery;
-import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
+import org.openmrs.module.pbsstatus.ResponseData;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 //@Repository("pbsstatus.PBSStatusDao")
 public class PBSStatusDaoImpl implements PbsStatusDao {
@@ -156,31 +159,179 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	}
 	
 	public String getNDRStatus(String pepfarId, String facilityDatimCode) throws Exception {
-		//		=" + pageNumber + "&PageSize=500
+		// Construct URL
 		String url = "http://41.223.44.116:90/tbqual/api/ndrmatch_status/" + pepfarId + "/" + facilityDatimCode;
 		
-		URL obj = new URL(url);
-		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-		// optional default is GET
-		con.setRequestMethod("GET");
-		con.setRequestProperty("Content-Type", "application/json");
-		//add request header
-		con.setRequestProperty("User-Agent", "Mozilla/5.0");
-		int responseCode = con.getResponseCode();
-		System.out.println("\nSending 'GET' request to URL : " + url);
-		System.out.println("Response Code : " + responseCode);
-		
-		BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-		String inputLine;
-		StringBuffer response = new StringBuffer();
-		while ((inputLine = in.readLine()) != null) {
-			response.append(inputLine);
+		try {
+			// Open connection
+			URL obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			
+			// Set request method and headers
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setRequestProperty("User-Agent", "Mozilla/5.0");
+			
+			// Get response code
+			int responseCode = con.getResponseCode();
+			System.out.println("\nSending 'GET' request to URL : " + url);
+			System.out.println("Response Code : " + responseCode);
+			
+			// Read response
+			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer response = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+			in.close();
+			
+			System.out.println("The Response: " + response);
+			
+			return response.toString();
 		}
-		in.close();
+		catch (UnknownHostException e) {
+			
+			// Handle no internet connection error
+			System.out.println("Error: No internet connection. " + e.getMessage());
+			// throw e; // Re-throw the exception if needed for further handling
+			
+			return getLocalNDRStatus(pepfarId);
+		}
+		catch (Exception e) {
+			// Handle other exceptions
+			System.out.println("Error: " + e.getMessage());
+			//	throw e; // Re-throw the exception if needed for further handling
+			return getLocalNDRStatus(pepfarId);
+		}
+	}
+	
+	public String getNDRStatusforFacility(String pepfarId, String facilityDatimCode) throws Exception {
+		// Construct URL
+		String url = "http://41.223.44.116:90/tbqual/api/ndrmatch_status/" + pepfarId + "/" + facilityDatimCode;
 		
-		System.out.println("The Response" + response);
+		try {
+			// Open connection
+			URL obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			
+			// Set request method and headers
+			con.setRequestMethod("GET");
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setRequestProperty("User-Agent", "Mozilla/5.0");
+			
+			// Get response code
+			int responseCode = con.getResponseCode();
+			
+			System.out.println("\nSending 'GET' request to URL : " + url);
+			System.out.println("Response Code : " + responseCode);
+			
+			// Read response
+			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer response = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+			in.close();
+			
+			System.out.println("The NDR Status saved to Database");
+			
+			saveResponseToDatabase(response.toString());
+			
+			return "Successful";
+			
+		}
+		catch (UnknownHostException e) {
+			
+			// Handle no internet connection error
+			System.out.println("Error: No internet connection. " + e.getMessage());
+			// throw e; // Re-throw the exception if needed for further handling
+			return "Unsuccessful";
+		}
+		catch (Exception e) {
+			// Handle other exceptions
+			System.out.println("Error: " + e.getMessage());
+			// throw e; // Re-throw the exception if needed for further handling
+			return "Unsuccessful";
+		}
+	}
+	
+	private final ObjectMapper objectMapper = new ObjectMapper();
+	
+	public void saveResponseToDatabase(String response) {
+		try {
+			// Construct JavaType for List<ResponseData>
+			JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, ResponseData.class);
+			
+			// Parse JSON response into a list of objects
+			List<ResponseData> responseDataList = objectMapper.readValue(response, listType);
+			
+			// Get Hibernate session and create SQL query
+			SQLQuery query = getSessionFactory()
+			        .getCurrentSession()
+			        .createSQLQuery(
+			            "INSERT INTO pbs_ndr_status (facility_datim_code, pepfar_id, match_outcome, recapture_date, baseline_replaced) VALUES (:facilityDatimCode, :pepfarId, :matchOutcome, :recaptureDate, :baselineReplaced)");
+			
+			// Iterate over the list and execute INSERT statements
+			for (ResponseData responseData : responseDataList) {
+				query.setParameter("facilityDatimCode", responseData.getFacilityDatimCode());
+				query.setParameter("pepfarId", responseData.getPepfarId());
+				query.setParameter("matchOutcome", responseData.getMatchOutcome());
+				query.setParameter("recaptureDate", responseData.getRecaptureDate());
+				query.setParameter("baselineReplaced", responseData.getBaselineReplaced());
+				query.executeUpdate();
+			}
+			
+			System.out.println("Response saved to database successfully!");
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Failed to save response to database.");
+		}
+	}
+	
+	public String getLocalNDRStatus(String pepfarId) {
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where pepfar_id=:pepfarID";
 		
-		return response.toString();
+		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
+		query.setParameter("pepfarID", pepfarId);
+		
+		List<Object[]> clientLocalNDRStatus = query.list();
+		
+		List<Map<String, String>> clientNDRStatus = new ArrayList<Map<String, String>>();
+		
+		for (Object[] row : clientLocalNDRStatus) {
+			Map<String, String> tempMap = new HashMap<String, String>();
+			Integer patientId = (Integer) row[0];
+			tempMap.put("match_outcome", patientId.toString());
+			tempMap.put("recapture_date", (String) row[1]);
+			tempMap.put("baseline_replaced", (String) row[2]);
+			tempMap.put("otherinfo", (String) row[3]);
+			clientNDRStatus.add(tempMap);
+		}
+		return clientNDRStatus.toString();
+	}
+	
+	public String getPriorityList() {
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where match_outcome !='Match'";
+		
+		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
+		
+		List<Object[]> clientLocalNDRStatus = query.list();
+		
+		List<Map<String, String>> clientNDRStatus = new ArrayList<Map<String, String>>();
+		
+		for (Object[] row : clientLocalNDRStatus) {
+			Map<String, String> tempMap = new HashMap<String, String>();
+			Integer patientId = (Integer) row[0];
+			tempMap.put("match_outcome", patientId.toString());
+			tempMap.put("recapture_date", (String) row[1]);
+			tempMap.put("baseline_replaced", (String) row[2]);
+			tempMap.put("otherinfo", (String) row[3]);
+			clientNDRStatus.add(tempMap);
+		}
+		return clientNDRStatus.toString();
 	}
 	
 	// Connection Methods below

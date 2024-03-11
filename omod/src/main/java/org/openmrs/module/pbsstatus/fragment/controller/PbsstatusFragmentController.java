@@ -16,6 +16,12 @@ public class PbsstatusFragmentController {
 	PbsStatusService pbsStatusService = Context.getService(PbsStatusService.class);
 	
 	public void controller(FragmentModel model) throws Exception {
+		
+		String facilityDatimCode = Context.getAdministrationService().getGlobalProperty("facility_datim_code");
+		
+		String upDateLocalDB = pbsStatusService.getNDRStatusforFacility("na", facilityDatimCode);
+		System.out.println("Update of Local Database " + upDateLocalDB);
+		
 		model.addAttribute("patients", pbsStatusService.getAllPatients());
 		model.addAttribute("dformatter", DateFormatter.class);
 	}
