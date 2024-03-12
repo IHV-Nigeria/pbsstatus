@@ -25,7 +25,8 @@
     </div>
 </nav>
 
-<h1>Clients PBS Status</h1>
+<h1 style="text-align: center;">Clients List</h1>
+<small style="text-align: center;"><i>Search For a Patient</i></small>
 
 
 <div class="row" style="width: 100% !important;">

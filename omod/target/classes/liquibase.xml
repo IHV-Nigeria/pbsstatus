@@ -35,7 +35,7 @@
         <addForeignKeyConstraint constraintName="pbsstatus_item_owner_fk" baseTableName="pbsstatus_item" baseColumnNames="owner"  referencedTableName="users"
                                  referencedColumnNames="user_id" />
     </changeSet> -->
-    <changeSet id="pbsstatus-2024-03-08" author="Anthony Nwokoma">
+    <changeSet id="pbsstatus-2024-03-09" author="Anthony Nwokoma">
         <preConditions onFail="MARK_RAN">
             <not><tableExists tableName="pbs_ndr_status"/></not>
         </preConditions>
@@ -43,11 +43,10 @@
             Creating the pbs_ndr_status table
         </comment>
         <createTable tableName="pbs_ndr_status">
-            <column name="pbs_ndr_status_id" type="int" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
+            <column name="pepfar_id" type="varchar(30)">
+                <constraints primaryKey="true"/>
             </column>
             <column name="facility_datim_code" type="varchar(30)" />
-            <column name="pepfar_id" type="varchar(30)" />
             <column name="match_outcome" type="varchar(30)" />
             <column name="recapture_date" type="TIMESTAMP" />
             <column name="baseline_replaced" type="varchar(30)" />

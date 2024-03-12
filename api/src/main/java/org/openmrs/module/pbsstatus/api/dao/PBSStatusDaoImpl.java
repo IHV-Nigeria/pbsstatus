@@ -9,6 +9,7 @@
  */
 package org.openmrs.module.pbsstatus.api.dao;
 
+import com.google.gson.Gson;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -213,7 +214,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		}
 		catch (Exception e) {
 			// Handle other exceptions
-			System.out.println("Error: " + e.getMessage());
+			System.out.println("Error Local did not work also : " + e.getMessage());
 			//	throw e; // Re-throw the exception if needed for further handling
 			return getLocalNDRStatus(pepfarId);
 		}
@@ -280,9 +281,10 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			
 			// Parse JSON response into a list of objects
 			List<ResponseData> responseDataList = objectMapper.readValue(response, listType);
+			
 			transaction = getSessionFactory().getCurrentSession().beginTransaction();
-			// Get Hibernate session and create SQL query
-			// "INSERT INTO pbs_ndr_status (facility_datim_code, pepfar_id, match_outcome, recapture_date, baseline_replaced, otherinfo) VALUES (:facilityDatimCode, :pepfarId, :matchOutcome, :recaptureDate, :baselineReplaced, :otherInfo)");
+			
+			// Get Hibernate session and create SQL query with ON DUPLICATE KEY UPDATE
 			SQLQuery query = getSessionFactory()
 			        .getCurrentSession()
 			        .createSQLQuery(
@@ -291,7 +293,8 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			                    + "ON DUPLICATE KEY UPDATE " + "match_outcome = VALUES(match_outcome), "
 			                    + "recapture_date = VALUES(recapture_date), "
 			                    + "baseline_replaced = VALUES(baseline_replaced), " + "otherinfo = VALUES(otherinfo)");
-			// Iterate over the list and execute INSERT statements
+			
+			// Iterate over the list and execute INSERT/UPDATE statements
 			for (ResponseData responseData : responseDataList) {
 				
 				Timestamp recaptureDate = convertToTimestamp(responseData.getRecapture_date());
@@ -319,7 +322,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		}
 		finally {
 			if (getSessionFactory().getCurrentSession() != null && getSessionFactory().getCurrentSession().isOpen()) {
-				getSessionFactory().getCurrentSession().close();
+				// No need to close session explicitly due to Hibernate SessionFactory management
 			}
 		}
 	}
@@ -338,24 +341,32 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	}
 	
 	public String getLocalNDRStatus(String pepfarId) {
-		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where pepfar_id=:pepfarID";
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where pepfar_id=:pepfarID LIMIT 1";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
 		query.setParameter("pepfarID", pepfarId);
 		
 		List<Object[]> clientLocalNDRStatus = query.list();
+
+		System.out.println(clientLocalNDRStatus);
 		
-		List<Map<String, String>> clientNDRStatus = new ArrayList<Map<String, String>>();
+		List<Map<String, String>> clientNDRStatus = new ArrayList<>();
 		
 		for (Object[] row : clientLocalNDRStatus) {
-			Map<String, String> tempMap = new HashMap<String, String>();
-			tempMap.put("match_outcome", row[0].toString());
-			tempMap.put("recapture_date", row[1].toString());
-			tempMap.put("baseline_replaced", row[2].toString());
+			Map<String, String> tempMap = new HashMap<>();
+			tempMap.put("match_outcome", row[0]!= null ? row[0].toString() : "");
+			tempMap.put("recapture_date", row[1]!= null ? row[1].toString() : "");
+			tempMap.put("baseline_replaced", row[2]!= null ? row[2].toString() : "");
 			tempMap.put("otherinfo", row[3] != null ? row[3].toString() : "");
 			clientNDRStatus.add(tempMap);
 		}
-		return clientNDRStatus.toString();
+
+		String json = new Gson().toJson(clientNDRStatus);
+
+
+		System.out.println(json);
+
+		return json;
 	}
 	
 	public List<Map<String, Object>> getPriorityList() {
