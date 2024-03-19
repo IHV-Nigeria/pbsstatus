@@ -43,9 +43,9 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	DbSessionFactory sessionFactory;
 	
 	public List<Map<String, String>> getAllPatients() {
-		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome from patient_identifier pi"
+		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome, pns.otherinfo from patient_identifier pi"
 		        + " right join person_name pn on pn.person_id=pi.patient_id "
-		        + " right join pbs_ndr_status pns on pn.pepfar_id=pi.patient_id "
+		        + " right join pbs_ndr_status pns on pns.pepfar_id=pi.identifier "
 		        + " where pi.identifier_type=4 AND pn.voided = false ";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
@@ -62,6 +62,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			tempMap.put("given_name", (String) row[2]);
 			tempMap.put("family_name", (String) row[3]);
 			tempMap.put("match_outcome", (String) row[4]);
+			tempMap.put("otherinfo", (String) row[5]);
 			patientList.add(tempMap);
 		}
 		return patientList;
