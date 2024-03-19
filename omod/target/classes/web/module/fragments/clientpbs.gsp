@@ -16,6 +16,15 @@
 <% puuid = "8cc7974f-4f30-4a40-84d9-7f49a4a2818b" %>
 <div style="text-align: center"><a href="/<%=ui.contextPath()%>/nigeriaemr/biometricform.page?patientId=<%=puuid%>&returnUrl=%2Fopenmrs%2Fcoreapps%2Fclinicianfacing%2Fpatient.page%3FpatientId%3D<%=puuid%>%26" class="btn btn-outline-info">Recapture</a> </div>
 <hr style="border: solid 2px gray">
+<table>
+    <thead>
+    <tr>
+        <th>Enter Comments/Observation(s):</th>
+        <th style="width: 60%"><input type="text" id="comment" class="form-control"><input type="hidden" id="pepfarId" value="<%= pepfarId %>"></th>
+        <th><a href="#" class="btn btn-outline-info" onClick="saveComment()">Save Comment</a> </th>
+    </tr>
+    </thead>
+</table>
 <h2 style="text-align: center; font-weight: bold;">NDR Status</h2>
 <table class="table table-striped" width="98%" style="width: 98% !important;  margin: 1% !important">
     <thead>
@@ -35,10 +44,10 @@
 
         if (!myObjects.isEmpty()) {
 
-        String otherinfo = myObjects.get(0).get("other_info");
+        String otherinfo = myObjects.get(0).get("otherinfo");
 
         if(myObjects.get(0).get("match_outcome")=="Match" && myObjects.get(0).get("otherinfo")==null){
-            otherinfo = "DO NOT replace when mismatched since this client has matched on NDR, rather, recapture by placing the finger properly."
+            otherinfo = "DO NOT replace when mismatched since this client has matched on NDR, rather, recapture by placing the finger properly. <br><b>DA's Comment: "+myObjects.get(0).get("otherinfo")+"</b>";
         }
     %>
         <tr>
@@ -220,3 +229,24 @@
     </table>
 
 </div>
+
+<script type="text/javascript">
+
+
+    var jq = jQuery;
+
+    function saveComment() {
+        var pepfarId = jq("#pepfarId").val();
+        var comment = jq("#comment").val();
+        jq.getJSON('${ui.actionLink("saveComment")}', {comment: comment, pepfarId: pepfarId},
+            function (response) {
+                console.log(response);
+                if(response === true){
+                    alert(response);
+                }
+            });
+
+    }
+
+
+</script>

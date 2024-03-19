@@ -18,4 +18,6 @@ public interface PbsStatusService {
 	String getNDRStatusforFacility(String na, String facilityDatimCode) throws Exception;
 	
 	List<Map<String, Object>> getPriorityList();
+	
+	void saveComment(String comment, String pepfarId) throws Exception;
 }

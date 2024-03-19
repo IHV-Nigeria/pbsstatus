@@ -50,4 +50,9 @@ public class PbsStatusServiceImpl implements PbsStatusService {
 		return pbsStatusDao.getPriorityList();
 	}
 	
+	@Override
+	public void saveComment(String comment, String pepfarId) throws Exception {
+		pbsStatusDao.saveComment(comment, pepfarId);
+	}
+	
 }

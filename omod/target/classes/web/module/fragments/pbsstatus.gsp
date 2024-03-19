@@ -25,7 +25,8 @@
     </div>
 </nav>
 
-<h1>Clients PBS Status</h1>
+<h1 style="text-align: center;">Clients List</h1>
+<small style="text-align: center;"><i>Search For a Patient</i></small>
 
 
 <div class="row" style="width: 100% !important;">
@@ -43,6 +44,9 @@
                 Last Name
             </th>
             <th>
+                NDR Status
+            </th>
+            <th>
                 View PBS Status
             </th>
         </tr>
@@ -56,6 +60,7 @@
                 <td>${ patients.get(i).get("pepfarId")}</td>
                 <td>${ patients.get(i).get("given_name") }</td>
                 <td>${ patients.get(i).get("family_name") }</td>
+            <td>${ patients.get(i).get("match_outcome") }</td>
                 <td><a target="_blank" href="clientpbs.page?pepfarId=${patients.get(i).get("pepfarId")}&patient_id=${patients.get(i).get("patient_id")}" class="btn btn-outline-info" title="Client to view client PBS Status">View Status</a></td>
             </tr>
             <% } %>

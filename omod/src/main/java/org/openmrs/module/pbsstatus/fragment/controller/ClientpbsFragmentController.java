@@ -9,6 +9,12 @@ import org.openmrs.ui.framework.fragment.FragmentModel;
 import org.openmrs.ui.framework.page.PageModel;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +44,23 @@ public class ClientpbsFragmentController {
 		model.addAttribute("pepfarId", pepfarId);
 		model.addAttribute("ndrStatus", ndrStatus);
 		model.addAttribute("dformatter", DateFormatter.class);
-		
 	}
+	
+	public String saveComment(HttpServletRequest request) {
+		
+		try {
+			
+			String comment = request.getParameter("comment");
+			String pepfarId = request.getParameter("pepfarId");
+			
+			pbsStatusService.saveComment(comment, pepfarId);
+			
+			return "Observation saved successfully";
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+			return "Error saving observation";
+		}
+	}
+	
 }
