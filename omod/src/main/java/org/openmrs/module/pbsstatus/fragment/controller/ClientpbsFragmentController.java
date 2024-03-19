@@ -37,6 +37,7 @@ public class ClientpbsFragmentController {
 		last_recapture = pbsStatusService.getLastRecapture(pepfarId, patient_id);
 		current_recapture = pbsStatusService.getCurrentRecapture(pepfarId, patient_id);
 		ndrStatus = pbsStatusService.getNDRStatus(pepfarId, facilityDatimCode);
+		String patientUuid = pbsStatusService.getPatientUuid(patient_id);
 		
 		model.addAttribute("baseline", baseline);
 		model.addAttribute("last_recapture", last_recapture);
@@ -44,6 +45,7 @@ public class ClientpbsFragmentController {
 		model.addAttribute("pepfarId", pepfarId);
 		model.addAttribute("ndrStatus", ndrStatus);
 		model.addAttribute("dformatter", DateFormatter.class);
+		model.addAttribute("puuid", patientUuid);
 	}
 	
 	public String saveComment(HttpServletRequest request) {

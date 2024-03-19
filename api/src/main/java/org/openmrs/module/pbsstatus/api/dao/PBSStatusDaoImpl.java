@@ -20,6 +20,7 @@ import org.hibernate.Transaction;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.openmrs.Patient;
+import org.openmrs.Person;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
 import org.openmrs.module.pbsstatus.ResponseData;
 
@@ -496,6 +497,25 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			// Handle other exceptions
 			System.out.println("Error: " + e.getMessage());
 			// throw e; // Re-throw the exception if needed for further handling
+		}
+	}
+	
+	public String getPatientUuid(int patientId) {
+		try {
+			Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(Patient.class);
+			// Assuming the entity is named Patient and patientId is the property name
+			
+			criteria.createAlias("person", "p"); // Join Patient with Person
+			criteria.add(Restrictions.eq("patientId", patientId));
+			criteria.setProjection(Projections.property("p.uuid")); // Fetch uuid from Person
+			
+			String uuid = (String) criteria.uniqueResult();
+			
+			return uuid != null ? uuid : "";
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return "";
 		}
 	}
 	

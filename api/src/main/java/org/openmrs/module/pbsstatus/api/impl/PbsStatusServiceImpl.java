@@ -55,4 +55,8 @@ public class PbsStatusServiceImpl implements PbsStatusService {
 		pbsStatusDao.saveComment(comment, pepfarId);
 	}
 	
+	@Override
+	public String getPatientUuid(int patient_id) {
+		return pbsStatusDao.getPatientUuid(patient_id);
+	}
 }

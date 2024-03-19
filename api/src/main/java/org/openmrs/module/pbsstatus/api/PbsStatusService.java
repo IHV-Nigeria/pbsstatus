@@ -20,4 +20,7 @@ public interface PbsStatusService {
 	List<Map<String, Object>> getPriorityList();
 	
 	void saveComment(String comment, String pepfarId) throws Exception;
+	
+	String getPatientUuid(int patient_id) throws Exception;
+	
 }

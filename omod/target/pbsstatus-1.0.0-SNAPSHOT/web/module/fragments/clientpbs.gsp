@@ -13,7 +13,6 @@
 </nav>
 <h1 style="text-align: center;">CLIENT FINGERPRINT ANALYSIS</h1>
 <h3 style="text-align: center;">PEPFAR ID: <%=pepfarId%></h3>
-<% puuid = "8cc7974f-4f30-4a40-84d9-7f49a4a2818b" %>
 <div style="text-align: center"><a href="/<%=ui.contextPath()%>/nigeriaemr/biometricform.page?patientId=<%=puuid%>&returnUrl=%2Fopenmrs%2Fcoreapps%2Fclinicianfacing%2Fpatient.page%3FpatientId%3D<%=puuid%>%26" class="btn btn-outline-info">Recapture</a> </div>
 <hr style="border: solid 2px gray">
 <table>
@@ -241,8 +240,8 @@
         jq.getJSON('${ui.actionLink("saveComment")}', {comment: comment, pepfarId: pepfarId},
             function (response) {
                 console.log(response);
-                if(response === true){
-                    alert(response);
+                if(response){
+                    alert("Comment/Observation saved successfully!");
                 }
             });
 

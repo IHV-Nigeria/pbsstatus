@@ -19,5 +19,7 @@ public interface PbsStatusDao {
 	
 	List<Map<String, Object>> getPriorityList();
 	
+	String getPatientUuid(int patient_id);
+	
 	void saveComment(String comment, String pepfarId) throws Exception;
 }
