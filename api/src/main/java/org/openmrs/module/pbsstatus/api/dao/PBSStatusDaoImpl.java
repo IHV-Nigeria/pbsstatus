@@ -29,6 +29,7 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.sql.*;
 import java.text.ParseException;
@@ -44,7 +45,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	DbSessionFactory sessionFactory;
 	
 	public List<Map<String, String>> getAllPatients() {
-		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome, pns.otherinfo from patient_identifier pi"
+		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome, pns.otherinfo,pns.comment,pns.baseline_replaced from patient_identifier pi"
 		        + " right join person_name pn on pn.person_id=pi.patient_id "
 		        + " right join pbs_ndr_status pns on pns.pepfar_id=pi.identifier "
 		        + " where pi.identifier_type=4 AND pn.voided = false ";
@@ -64,6 +65,8 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			tempMap.put("family_name", (String) row[3]);
 			tempMap.put("match_outcome", (String) row[4]);
 			tempMap.put("otherinfo", (String) row[5]);
+			tempMap.put("comment", (String) row[6]);
+			tempMap.put("baseline_replaced", (String) row[7]);
 			patientList.add(tempMap);
 		}
 		return patientList;
@@ -185,6 +188,8 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		String url = "http://41.223.44.116:90/ndrstatus/index.php?pepfarid=" + pepfarId + "&fdatimcode=" + facilityDatimCode;
 		
 		try {
+			sendDBCommentToAPI(pepfarId);
+			
 			// Open connection
 			URL obj = new URL(url);
 			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -352,7 +357,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	}
 	
 	public String getLocalNDRStatus(String pepfarId) {
-		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo from pbs_ndr_status where pepfar_id=:pepfarID LIMIT 1";
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo, comment from pbs_ndr_status where pepfar_id=:pepfarID LIMIT 1";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
 		query.setParameter("pepfarID", pepfarId);
@@ -369,8 +374,11 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			tempMap.put("recapture_date", row[1]!= null ? row[1].toString() : "");
 			tempMap.put("baseline_replaced", row[2]!= null ? row[2].toString() : "");
 			tempMap.put("otherinfo", row[3] != null ? row[3].toString() : "");
+			tempMap.put("comment", row[4] != null ? row[4].toString() : "");
 			clientNDRStatus.add(tempMap);
 		}
+
+
 
 		String json = new Gson().toJson(clientNDRStatus);
 
@@ -381,7 +389,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	}
 	
 	public List<Map<String, Object>> getPriorityList() {
-		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo, pepfar_id from pbs_ndr_status where match_outcome !='Match'";
+		String SQLqueryString = "select match_outcome,recapture_date,baseline_replaced,otherinfo, pepfar_id, comment from pbs_ndr_status where match_outcome !='Match'";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
 		
@@ -396,6 +404,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			tempMap.put("baseline_replaced", row[2] != null ? row[2] : "");
 			tempMap.put("otherinfo", row[3] != null ? row[3] : "");
 			tempMap.put("pepfar_id", row[4] != null ? row[4] : "");
+			tempMap.put("comment", row[5] != null ? row[5] : "");
 			clientNDRStatus.add(tempMap);
 		}
 		return clientNDRStatus;
@@ -426,7 +435,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			SQLQuery query = getSessionFactory()
 			        .getCurrentSession()
 			        .createSQLQuery(
-			            "UPDATE pbs_ndr_status SET otherinfo = CASE WHEN otherinfo IS NULL THEN :comment ELSE CONCAT(otherinfo, ', ', :comment) END WHERE pepfar_id = :pepfarid");
+			            "UPDATE pbs_ndr_status SET comment = CASE WHEN comment IS NULL THEN :comment ELSE CONCAT(comment, '</br> - ', :comment) END WHERE pepfar_id = :pepfarid");
 			System.out.println("INSERT COMMENT STARTED");
 			
 			query.setParameter("comment", comment);
@@ -437,6 +446,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			transaction.commit();
 			
 			sendCommentToAPI(pepfarId, comment);
+			//			sendDBCommentToAPI();
 			System.out.println("COMMENT SAVED!");
 		}
 		catch (Exception e) {
@@ -444,6 +454,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 				transaction.rollback();
 			}
 			sendCommentToAPI(pepfarId, comment);
+			
 			e.printStackTrace();
 			System.out.println("Failed to save response to database.");
 		}
@@ -505,17 +516,84 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(Patient.class);
 			// Assuming the entity is named Patient and patientId is the property name
 			
-			criteria.createAlias("person", "p"); // Join Patient with Person
 			criteria.add(Restrictions.eq("patientId", patientId));
-			criteria.setProjection(Projections.property("p.uuid")); // Fetch uuid from Person
 			
-			String uuid = (String) criteria.uniqueResult();
+			Patient patient = (Patient) criteria.uniqueResult();
 			
-			return uuid != null ? uuid : "";
+			if (patient != null) {
+				Person person = patient.getPerson();
+				if (person != null) {
+					return person.getUuid();
+				}
+			}
+			
+			return "";
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 			return "";
+		}
+	}
+	
+	public void sendDBCommentToAPI(String pepfarId) {
+		
+		// SQL query to fetch the comment for the given pepfarId
+		String SQLqueryString = "SELECT comment FROM pbs_ndr_status WHERE pepfar_id = :pepfarid";
+		
+		// Create SQL query
+		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
+		query.setParameter("pepfarid", pepfarId);
+		
+		// Execute query and get the comment
+		String comment = (String) query.uniqueResult();
+		
+		// Return the comment
+		// comment != null ? comment : "";
+		System.out.println("DB Comments: " + comment);
+		
+		// Construct URL
+		String url = "http://41.223.44.116:90/ndrstatus/index.php";
+		
+		try {
+			// Open connection
+			URL obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			
+			// Set request method and headers
+			con.setRequestMethod("POST");
+			con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+			con.setRequestProperty("User-Agent", "Mozilla/5.0");
+			con.setDoOutput(true);
+			
+			// Construct URL parameters
+			String urlParameters = "pepfar_id=" + URLEncoder.encode(pepfarId, "UTF-8") + "&comment="
+			        + URLEncoder.encode(comment, "UTF-8");
+			
+			// Send POST request
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			wr.writeBytes(urlParameters);
+			wr.flush();
+			wr.close();
+			
+			// Get response code
+			int responseCode = con.getResponseCode();
+			
+			System.out.println("\nSending 'POST' request to URL : " + url);
+			System.out.println("Response Code : " + responseCode);
+			
+			System.out.println("The Facility Comments Synchronized to API!");
+			
+		}
+		catch (UnknownHostException e) {
+			
+			// Handle no internet connection error
+			System.out.println("Error: No internet connection. " + e.getMessage());
+			// throw e; // Re-throw the exception if needed for further handling
+		}
+		catch (Exception e) {
+			// Handle other exceptions
+			System.out.println("Error: " + e.getMessage());
+			// throw e; // Re-throw the exception if needed for further handling
 		}
 	}
 	

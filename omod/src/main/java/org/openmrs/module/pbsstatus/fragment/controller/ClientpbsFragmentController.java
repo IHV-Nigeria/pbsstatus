@@ -38,6 +38,7 @@ public class ClientpbsFragmentController {
 		current_recapture = pbsStatusService.getCurrentRecapture(pepfarId, patient_id);
 		ndrStatus = pbsStatusService.getNDRStatus(pepfarId, facilityDatimCode);
 		String patientUuid = pbsStatusService.getPatientUuid(patient_id);
+		System.out.println("Patient UUID" + patientUuid);
 		
 		model.addAttribute("baseline", baseline);
 		model.addAttribute("last_recapture", last_recapture);

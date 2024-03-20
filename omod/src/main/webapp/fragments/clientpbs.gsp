@@ -32,6 +32,7 @@
         <th>Recapture Date</th>
         <th>Baseline Replaced</th>
         <th>Other Details</th>
+        <th>Facility Comment</th>
     </tr>
     </thead>
 
@@ -46,7 +47,7 @@
         String otherinfo = myObjects.get(0).get("otherinfo");
 
         if(myObjects.get(0).get("match_outcome")=="Match" && myObjects.get(0).get("otherinfo")==null){
-            otherinfo = "DO NOT replace when mismatched since this client has matched on NDR, rather, recapture by placing the finger properly. <br><b>DA's Comment: "+myObjects.get(0).get("otherinfo")+"</b>";
+            otherinfo = "DO NOT replace when mismatched since this client has matched on NDR, rather, recapture by placing the finger properly.";
         }
     %>
         <tr>
@@ -54,6 +55,7 @@
             <td>${myObjects.get(0).get("recapture_date")}</td>
             <td>${myObjects.get(0).get("baseline_replaced")}</td>
             <td style="color: red;">${otherinfo}</td>
+            <td style="color: red;">${myObjects.get(0).get("comment")}</td>
 
         </tr>
     <% } else { %>
