@@ -27,10 +27,21 @@
 
 <h1 style="text-align: center;">Clients List</h1>
 <small style="text-align: center;"><i>Search For a Patient</i></small>
+<small style="text-align: center; color: green"><i>Last NDR Update: {{lastNDRUpdate}}</i></small>
 
 
 <div class="row" style="width: 100% !important;">
 
+    <table id="searchTable" class="table table-responsive" style="width: 50%; align-self: center;">
+        <tr>
+            <td>
+                <input id="pepfarId" type="text" class="form-control" placeholder="Search with PepFarID" value="" style="width: 100%;" />
+            </td>
+            <td>
+                <button class="btn btn-outline-primary" onClick="searchPatient()">Search</button>
+            </td>
+        </tr>
+    </table>
     <table id="filteredPatients" class="table table-striped" style="width: 98% !important;  margin: 1% !important">
         <thead>
         <tr>
@@ -122,4 +133,23 @@
             ]
         });
     });
+
+
+    function searchPatient() {
+        var pepfarId = jq("#pepfarId").val();
+        jq.getJSON('${ui.actionLink("searchPatient")}', {pepfarId: pepfarId},
+            function (response) {
+                console.log(response);
+                if(response){
+                    if(response>0){
+                        var url = "clientpbs.page?pepfarId="+ encodeURIComponent(pepfarId)+"&patient_id="+response; // Replace with your base URL
+                        window.location.href = url;
+                    }else{
+                        alert("No Patient Found with this PEPFAR_ID");
+                    }
+                }
+            }
+        );
+    }
+
 </script>

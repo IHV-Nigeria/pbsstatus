@@ -17,10 +17,10 @@ import org.codehaus.jackson.type.JavaType;
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
 import org.hibernate.Transaction;
-import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.openmrs.Patient;
 import org.openmrs.Person;
+import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
 import org.openmrs.module.pbsstatus.ResponseData;
 
@@ -31,11 +31,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
-import java.sql.*;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Date;
 
 //@Repository("pbsstatus.PBSStatusDao")
 public class PBSStatusDaoImpl implements PbsStatusDao {
@@ -48,7 +47,7 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome, pns.otherinfo,pns.comment,pns.baseline_replaced from patient_identifier pi"
 		        + " right join person_name pn on pn.person_id=pi.patient_id "
 		        + " right join pbs_ndr_status pns on pns.pepfar_id=pi.identifier "
-		        + " where pi.identifier_type=4 AND pn.voided = false ";
+		        + " where pi.identifier_type=4 AND pn.voided = 0 ";
 		
 		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
 		
@@ -269,6 +268,11 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 			
 			saveResponseToDatabase(response.toString());
 			
+			// update global property
+			Calendar now = Calendar.getInstance();
+			String today = now.get(Calendar.YEAR) + "-" + (now.get(Calendar.MONTH) + 1) + "-" + now.get(Calendar.DATE);
+			Context.getAdministrationService().setGlobalProperty("last_ndr_update", today);
+			
 			return "Successful";
 			
 		}
@@ -411,14 +415,22 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	}
 	
 	public int getPatientIdByPepfarId(String pepfarId) {
+		System.out.println("Everybody See the Pepfar ID: " + pepfarId);
 		try {
-			Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(Patient.class); // Assuming the entity is named Patient
-			criteria.add(Restrictions.eq("pepfarId", pepfarId));
-			criteria.setProjection(Projections.property("patient_id")); // Assuming "patient_id" is the property name
+			String SQLqueryString = "select patient_id from patient_identifier where identifier = :pepfarId LIMIT 1";
+			SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
+			query.setParameter("pepfarId", pepfarId);
 			
-			Integer patientId = (Integer) criteria.uniqueResult();
+			// Execute query and get the comment
+			int patientId = (int) query.uniqueResult();
 			
-			return patientId != null ? patientId : -1; // Return -1 if patientId is null
+			//			Criteria criteria = getSessionFactory().getCurrentSession().createCriteria(Patient.class); // Assuming the entity is named Patient
+			//			criteria.add(Restrictions.eq("pepfarId", pepfarId));
+			//			criteria.setProjection(Projections.property("patientId")); // Assuming "patient_id" is the property name
+			//
+			//			Integer patientId = (Integer) criteria.uniqueResult();
+			//			System.out.println("Everybody See the Patient ID: " + patientId);
+			return patientId > 0 ? patientId : -1; // Return -1 if patientId is null
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -650,6 +662,38 @@ public class PBSStatusDaoImpl implements PbsStatusDao {
 	
 	public void setSessionFactory(DbSessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
+	}
+	
+	public List<Map<String, String>> searchPatient(String pepfarId) {
+		
+		int patient_id = getPatientIdByPepfarId(pepfarId);
+		
+		String SQLqueryString = "select pi.patient_id, pi.identifier, pn.given_name, pn.family_name, pns.match_outcome, pns.otherinfo,pns.comment,pns.baseline_replaced from patient_identifier pi"
+		        + " right join person_name pn on pn.person_id=pi.patient_id "
+		        + " right join pbs_ndr_status pns on pns.pepfar_id=pi.identifier "
+		        + " where pi.identifier_type=4 AND pi.patient_id= :patientId AND pn.voided = 0 ";
+		
+		SQLQuery query = getSessionFactory().getCurrentSession().createSQLQuery(SQLqueryString);
+		query.setParameter("patientId", patient_id);
+		
+		List<Object[]> allSearchPatients = query.list();
+		
+		List<Map<String, String>> searchList = new ArrayList<Map<String, String>>();
+		
+		for (Object[] row : allSearchPatients) {
+			Map<String, String> tempMap = new HashMap<String, String>();
+			Integer patientId = (Integer) row[0];
+			tempMap.put("patient_id", patientId.toString());
+			tempMap.put("pepfarId", (String) row[1]);
+			tempMap.put("given_name", (String) row[2]);
+			tempMap.put("family_name", (String) row[3]);
+			tempMap.put("match_outcome", (String) row[4]);
+			tempMap.put("otherinfo", (String) row[5]);
+			tempMap.put("comment", (String) row[6]);
+			tempMap.put("baseline_replaced", (String) row[7]);
+			searchList.add(tempMap);
+		}
+		return searchList;
 	}
 	
 }

@@ -23,4 +23,7 @@ public interface PbsStatusService {
 	
 	String getPatientUuid(int patient_id) throws Exception;
 	
+	List<Map<String, String>> searchPatient(String pepfarId);
+	
+	int getPatientIdByPepfarId(String pepfarId);
 }

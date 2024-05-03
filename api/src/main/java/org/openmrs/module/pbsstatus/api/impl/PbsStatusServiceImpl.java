@@ -59,4 +59,15 @@ public class PbsStatusServiceImpl implements PbsStatusService {
 	public String getPatientUuid(int patient_id) {
 		return pbsStatusDao.getPatientUuid(patient_id);
 	}
+	
+	@Override
+	public List<Map<String, String>> searchPatient(String pepfarId) {
+		return pbsStatusDao.getAllPatients();
+	}
+	
+	@Override
+	public int getPatientIdByPepfarId(String pepfarId) {
+		return pbsStatusDao.getPatientIdByPepfarId(pepfarId);
+	}
+	
 }

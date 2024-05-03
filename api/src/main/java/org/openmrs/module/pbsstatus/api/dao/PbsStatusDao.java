@@ -22,4 +22,8 @@ public interface PbsStatusDao {
 	String getPatientUuid(int patient_id);
 	
 	void saveComment(String comment, String pepfarId) throws Exception;
+	
+	List<Map<String, String>> searchPatient(String pepfarId);
+	
+	int getPatientIdByPepfarId(String pepfarId);
 }
